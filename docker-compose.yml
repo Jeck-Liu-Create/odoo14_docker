@@ -1,0 +1,50 @@
+version: '3'
+services:
+  web:
+  # 选择容器基础镜像，这里我们选择通过build . 意思就是拉取当前目录下的Dockerfile文件构建镜像。也可以使用 image: odoo:14 获取官方镜像，或者你自己的私有镜像。
+  #  image: odoo:14
+    build: .
+    # 自定义容器名
+    container_name: odoo14_accountant
+    # 项目依赖于 db , 所以启动时，会先创建db容器
+    depends_on:
+      - db
+    # 端口映射 ： 服务器端口：容器端口
+    ports:
+      - "9069:8069"
+    # 容器所属网络,根据需求可以自定义。
+    networks:
+      - "odooNet_accountant"
+    # 设置容器挂载，结合项目结构，一看就懂
+    volumes:
+      # 配置文件挂载
+      - ./conf:/etc/odoo
+      - ./data:/var/lib/odoo
+      - ./extra-addons:/mnt/extra-addons
+      - ./development-addons:/mnt/development-addons
+      - ./oca-addons:/mnt/oca-addons
+      # 源码挂载替换
+      # - ./odoo:/usr/lib/python3/dist-packages/odoo
+    # 项目挂了后，会自动重启
+    # command: /usr/lib/python3/dist-packages/odoo/odoo-bin -c /etc/odoo/odoo.conf
+    restart: always
+  # 数据库容器
+  db:
+    image: postgres:12
+    container_name: pgsql_potier_accountant
+    ports:
+      - "6432:5432"
+    networks:
+      - "odooNet_accountant"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+    # 将数据库数据挂载到本地
+      - /data/odoo_db/postgresData:/var/lib/postgresql/data/pgdata
+    restart: always
+networks:
+  odooNet_accountant:
+    driver: bridge
